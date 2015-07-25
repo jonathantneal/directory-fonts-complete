@@ -1,6 +1,6 @@
 {
 	"name": "directory-fonts-complete",
-	"version": "0.0.0",
+	"version": "1.0.0",
 	"description": "Generate a complete list of fonts and their sources from a directory",
 	"keywords": [
 		"directory",
