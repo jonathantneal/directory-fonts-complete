@@ -88,8 +88,9 @@ function addFontToFoundryByPath(foundry, resolvedFilePath, relativeFilePath) {
 	}
 }
 
-module.exports = function (relativeDirPath) {
+module.exports = function (relativeDirPath, relativeFontPath) {
 	relativeDirPath = relativeDirPath.replace(/\/$/, '');
+  relativeFontPath = relativeFontPath || relativeDirPath;
 
 	var resolvedDirPath = path.resolve(relativeDirPath);
 
@@ -100,7 +101,7 @@ module.exports = function (relativeDirPath) {
 
 		filePaths.forEach(function (filePath) {
 			var resolvedFilePath = resolvedDirPath + '/' + filePath;
-			var relativeFilePath = relativeDirPath + '/' + filePath;
+			var relativeFilePath = relativeFontPath + '/' + filePath;
 
 			addFontToFoundryByPath(foundry, resolvedFilePath, relativeFilePath);
 		});
