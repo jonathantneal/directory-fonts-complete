@@ -1,6 +1,6 @@
 {
 	"name": "directory-fonts-complete",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Generate a complete list of fonts and their sources from a directory",
 	"keywords": [
 		"directory",
@@ -14,6 +14,10 @@
 		"weights"
 	],
 	"author": "Jonathan Neal <jonathantneal@hotmail.com> (http://jonathantneal.com)",
+  "contributors": [
+	  "Jonathan Neal <jonathantneal@hotmail.com>",
+	  "Ruslan Abdullaev <abdullaev.rt@gmail.com>"
+	],
 	"license": "CC0-1.0",
 	"homepage": "https://github.com/jonathantneal/directory-fonts-complete",
 	"bugs": {
