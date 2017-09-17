@@ -5,6 +5,8 @@ var isEot = require('is-eot');
 var isOtf = require('is-otf');
 var isTtf = require('is-ttf');
 var isWoff = require('is-woff');
+var isWoff2 = require('is-woff2');
+var decompress = require('brotli/decompress');
 var opentype = require('./helper-opentype.js');
 var path = require('path');
 var utf8decode = require('./helper-utf8decode.js');
@@ -24,7 +26,17 @@ function getNormalizedFontFamilyByLangData(langData) {
 }
 
 function getNormalizedFontFormatByBuffer(buffer) {
-	return isWoff(buffer) ? 'woff' : isTtf(buffer) ? 'ttf' : isEot(buffer) ? 'eot' : isOtf(buffer) ? 'otf' : undefined;
+  return isWoff2(buffer)
+          ? 'woff2'
+          : isWoff(buffer)
+            ? 'woff'
+            : isTtf(buffer)
+              ? 'ttf'
+              : isEot(buffer)
+                ? 'eot'
+                : isOtf(buffer)
+                  ? 'otf'
+                  : undefined;
 }
 
 function getNormalizedFontStyleByLangData(langData) {
@@ -47,13 +59,15 @@ function getNormalizedFontWeightByLangData(langData) {
 	return 400;
 }
 
-function addFontToFoundryByPath(foundry, resolvedFilePath, relativeFilePath) {
+function addFontToFoundryByPath(foundry, resolvedFilePath, relativeFilePath, swapKeys) {
 	var buffer = fs.readFileSync(resolvedFilePath);
-	var fontFormat = getNormalizedFontFormatByBuffer(buffer);
-
+  var fontFormat = getNormalizedFontFormatByBuffer(buffer);
 	if (fontFormat) {
-		var arrayBuffer = new Uint8Array(buffer).buffer;
-		var rawData = opentype.parse(arrayBuffer);
+    // if (fontFormat === 'woff2') {
+    //   buffer = decompress(buffer);
+    // }
+
+    var rawData = opentype.parse(buffer.buffer);
 		var nameData = rawData && rawData.tables && rawData.tables.name;
 
 		if (nameData) {
@@ -68,16 +82,24 @@ function addFontToFoundryByPath(foundry, resolvedFilePath, relativeFilePath) {
 			}
 
 			var fontFamily = getNormalizedFontFamilyByLangData(langData);
-			var fontWeight = getNormalizedFontWeightByLangData(langData);
+      var fontWeight = getNormalizedFontWeightByLangData(langData);
 			var fontStyle = getNormalizedFontStyleByLangData(langData);
 			var fontSrcLocal = 4 in langData && 6 in langData ? [langData[4], langData[6]] : 4 in langData ? [langData[4]] : [];
 
 			if (fontFamily && fontWeight && fontStyle) {
 				var foundryFamily = foundry[fontFamily] = foundry[fontFamily] || {};
-				var foundryVariants = foundryFamily.variants = foundryFamily.variants || {};
-				var foundryWeight = foundryVariants[fontWeight] = foundryVariants[fontWeight] || {};
-				var foundryStyle  = foundryWeight[fontStyle] = foundryWeight[fontStyle] || { local: [], url: {} };
-
+        var foundryVariants = foundryFamily.variants = foundryFamily.variants || {};
+        
+        if (swapKeys) {
+          var key1 = fontStyle;
+          var key2 = fontWeight;
+        } else {
+          var key1 = fontWeight;
+          var key2 = fontStyle;
+        }
+        var foundryWeight = foundryVariants[key1] = foundryVariants[key1] || {};
+        var foundryStyle  = foundryWeight[key2] = foundryWeight[key2] || { local: [], url: {} };
+        
 				if (fontSrcLocal.length) {
 					foundryStyle.local = fontSrcLocal;
 				}
@@ -88,12 +110,12 @@ function addFontToFoundryByPath(foundry, resolvedFilePath, relativeFilePath) {
 	}
 }
 
-module.exports = function (relativeDirPath, relativeFontPath) {
+module.exports = function (relativeDirPath, relativeFontPath, swapKeys) {
 	relativeDirPath = relativeDirPath.replace(/\/$/, '');
   relativeFontPath = relativeFontPath || relativeDirPath;
+  swapKeys = swapKeys || false;
 
 	var resolvedDirPath = path.resolve(relativeDirPath);
-
 	var foundry = {};
 
 	if (fs.existsSync(resolvedDirPath) && fs.lstatSync(resolvedDirPath).isDirectory()) {
@@ -103,7 +125,7 @@ module.exports = function (relativeDirPath, relativeFontPath) {
 			var resolvedFilePath = resolvedDirPath + '/' + filePath;
 			var relativeFilePath = relativeFontPath + '/' + filePath;
 
-			addFontToFoundryByPath(foundry, resolvedFilePath, relativeFilePath);
+			addFontToFoundryByPath(foundry, resolvedFilePath, relativeFilePath, swapKeys);
 		});
 	}
 
